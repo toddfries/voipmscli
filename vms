@@ -47,6 +47,14 @@ use Data::Dumper;
 my $d = Data::Dumper->new([$balinfo]);
 print $d->Dump();
 
+if (0) { # works, just verbose, so disable unless desired
 my $cdr = $voip->getCDR( { date_from => '2016-08-01', date_to => '2016-09-01'} );
 $d = Data::Dumper->new([$cdr]);
 print $d->Dump();
+}
+
+if (1) {
+my $slist = $voip->getServersInfo(); # optional: server_pop => 1
+$d = Data::Dumper->new([$slist]);
+print $d->Dump();
+}
