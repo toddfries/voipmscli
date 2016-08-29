@@ -1,0 +1,52 @@
+#!/usr/bin/perl
+
+# Copyright (c) 2016 Todd T. Fries <todd@fries.net>
+#
+# Permission to use, copy, modify, and distribute this software for any
+# purpose with or without fee is hereby granted, provided that the above
+# copyright notice and this permission notice appear in all copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+use strict;
+use warnings;
+
+use VOIP::MS;
+my ($user,$pass);
+my $conffile=$ENV{'HOME'}."/.voipms.conf";
+my $config = { };
+if (-f $conffile) {
+	if (!open(CF,"$conffile")) {
+		print "open of $conffile failed, aborting\n";
+		exit(1);
+	}
+	my $line;
+	while(<CF>) {
+		chomp($line = $_);
+		if ($line =~ /^([a-z0-9]+)\s*=\s*(.*)$/) {
+			my ($var, $val) = ($1,$2);
+			$config->{$var} = $val;
+			#printf "config: '%s' = '%s'\n",$var,$val;
+		}
+	}
+}
+if (!defined($config->{user}) || !defined($config->{pass})) {
+	print "User or Pass is Null and void, bailing for now\n";
+	exit(1);
+}
+my $voip = VOIP::MS->new(username => $config->{user},
+	password => $config->{pass});
+my $balinfo= $voip->getBalance();
+use Data::Dumper;
+my $d = Data::Dumper->new([$balinfo]);
+print $d->Dump();
+
+my $cdr = $voip->getCDR( { date_from => '2016-08-01', date_to => '2016-09-01'} );
+$d = Data::Dumper->new([$cdr]);
+print $d->Dump();
