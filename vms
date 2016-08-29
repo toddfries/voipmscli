@@ -47,14 +47,80 @@ use Data::Dumper;
 my $d = Data::Dumper->new([$balinfo]);
 print $d->Dump();
 
-if (0) { # works, just verbose, so disable unless desired
+# the following 'if (0)' bits work, they're just verbose; enable if desired
+# this is a wip anyway, will get re-done once enough apis are implemented
+if (0) {
 my $cdr = $voip->getCDR( { date_from => '2016-08-01', date_to => '2016-09-01'} );
 $d = Data::Dumper->new([$cdr]);
 print $d->Dump();
 }
 
-if (1) {
+if (0) {
 my $slist = $voip->getServersInfo(); # optional: server_pop => 1
 $d = Data::Dumper->new([$slist]);
+print $d->Dump();
+}
+
+if (0) {
+my $ret = $voip->getCallAccounts(); # optional: client => 56115
+my $i=0;
+foreach my $acct (@$ret) {
+	if ($acct->{value} eq $acct->{description}) {
+		$acct->{description} = "";
+	}
+	printf "%2d. %12s %s\n", $i++, $acct->{value}, $acct->{description};
+	if ($acct->{value} eq "all") {
+		next;
+	}
+	my $r = $voip->getRegistrationStatus(account => $acct->{value});
+	$d = Data::Dumper->new([$r]);
+	print $d->Dump();
+}
+}
+	
+if (0) {
+my $ret = $voip->getCallBilling();
+$d = Data::Dumper->new([$ret]);
+print $d->Dump();
+}
+if (0) {
+my $ret = $voip->getCallTypes(); # optional: client => 56115
+$d = Data::Dumper->new([$ret]);
+print $d->Dump();
+}
+if (0) {
+my $ret = $voip->getRegistrationStatus(account => $config->{account0});
+$d = Data::Dumper->new([$ret]);
+print $d->Dump();
+}
+if (0) {
+my $cdr = $voip->getSMS( { from => '2016-08-01', to => '2016-09-01'} );
+$d = Data::Dumper->new([$cdr]);
+print $d->Dump();
+}
+if (0) { # hmmm, what is a callback exactly?
+my $cb = { };
+$cb->{description} = 'testing 1 2 3';
+$cb->{number} = '14057791633';
+$cb->{delay_before} = '30';
+$cb->{response_timeout} = '30';
+$cb->{digit_timeout} = '5';
+# optional
+$cb->{callerid_number} = '14058267307';
+my $cdr = $voip->setCallback( $cb );
+$d = Data::Dumper->new([$cdr]);
+print $d->Dump();
+}
+if (0) { # how to create a package?
+my $ret = $voip->getPackages(); # optional: package => 8378
+$d = Data::Dumper->new([$ret]);
+print $d->Dump();
+}
+
+if (1) {
+# optional: client => '' || '5615' || '5615_VoIP'
+# optional: did => 1231231234
+my $ret = $voip->getDIDsInfo();
+$d = Data::Dumper->new([$ret]);
 print $d->Dump();
 }
