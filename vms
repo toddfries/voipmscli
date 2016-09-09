@@ -18,7 +18,14 @@ use strict;
 use warnings;
 
 use Data::Dumper;
+use OpenBSD::Getopt;
 use VOIP::MS;
+
+# -n		quiet, just facts no labels
+
+our $opt_n = 0;
+
+getopts('n');
 
 my ($user,$pass);
 my $d;
@@ -35,7 +42,7 @@ if (-f $conffile) {
 		if ($line =~ /^([a-zA-Z][a-zA-Z_0-9]*)\s*=\s*(.*)$/) {
 			my ($var, $val) = ($1,$2);
 			$config->{$var} = $val;
-			printf "config: '%s' = '%s'\n",$var,$val;
+			#printf "config: '%s' = '%s'\n",$var,$val;
 		}
 	}
 }
@@ -45,24 +52,35 @@ if (!defined($config->{user}) || !defined($config->{pass})) {
 }
 my $voip = VOIP::MS->new(username => $config->{user},
 	password => $config->{pass});
-my $balinfo= $voip->getBalance();
-printf "Balance = %0.8f\n", $balinfo;
+
+if ($ARGV[0] eq "balance") {
+	my $balinfo= $voip->getBalance();
+	my $fmt = "Balance = %0.8f\n";
+	if ($opt_n > 0) {
+		$fmt = "%0.8f\n";
+	}
+	printf $fmt, $balinfo;
+	exit(0);
+}
 
 # the following 'if (0)' bits work, they're just verbose; enable if desired
 # this is a wip anyway, will get re-done once enough apis are implemented
-if (0) {
-my $cdr = $voip->getCDR( { date_from => '2016-08-01', date_to => '2016-09-01'} );
+
+if ($ARGV[0] eq "CDR") {
+my $cdr = $voip->getCDR( { date_from => '2016-08-01', date_to => '2016-10-01'} );
 $d = Data::Dumper->new([$cdr]);
 print $d->Dump();
+exit(0);
 }
 
-if (0) {
+if ($ARGV[0] eq "servers") {
 my $slist = $voip->getServersInfo(); # optional: server_pop => 1
 $d = Data::Dumper->new([$slist]);
 print $d->Dump();
+exit(0);
 }
 
-if (0) {
+if ($ARGV[0] eq "internationalinfo") {
   my $tret = $voip->getInternationalTypes();
   foreach my $it (@$tret) {
     printf "%12s %s\n", $it->{value}, $it->{description};
@@ -111,8 +129,9 @@ if (0) {
 	}
     }
   }
+  exit(0);
 }
-if (0) {
+if ($ARGV[0] eq "callaccounts") {
 my $ret = $voip->getCallAccounts(); # optional: client => 56115
 my $i=0;
 foreach my $acct (@$ret) {
@@ -129,17 +148,17 @@ foreach my $acct (@$ret) {
 }
 }
 	
-if (0) {
+if ($ARGV[0] eq "billing") {
 my $ret = $voip->getCallBilling();
 $d = Data::Dumper->new([$ret]);
 print $d->Dump();
 }
-if (0) {
+if ($ARGV[0] eq "calltypes") {
 my $ret = $voip->getCallTypes(); # optional: client => 56115
 $d = Data::Dumper->new([$ret]);
 print $d->Dump();
 }
-if (0) {
+if ($ARGV[0] eq "regstatus") {
 my $ret = $voip->getRegistrationStatus(account => $config->{account0});
 $d = Data::Dumper->new([$ret]);
 print $d->Dump();
@@ -157,38 +176,42 @@ my $cdr = $voip->setCallback( $cb );
 $d = Data::Dumper->new([$cdr]);
 print $d->Dump();
 }
-if (0) { # how to create a package?
+if ($ARGV[0] eq "packages") { # how to create a package?
 my $ret = $voip->getPackages(); # optional: package => 8378
 $d = Data::Dumper->new([$ret]);
 print $d->Dump();
 }
 
-if (0) {
+if ($ARGV[0] eq "dids") {
 # optional: client => '' || '5615' || '5615_VoIP'
 # optional: did => 1231231234
 my $ret = $voip->getDIDsInfo();
 $d = Data::Dumper->new([$ret]);
 print $d->Dump();
+exit(0);
 }
 
-if (0) {
+if ($ARGV[0] eq "sendsms") {
 my %p;
 $p{did} = $config->{mySMSdid};
 $p{dst} = $config->{mySMSdst};
-$p{message} = 'testing 1 2 3½¹°';
+#$p{message} = 'testing 1 2 3½¹°';
+$p{message} = 'The quick brown fox jumped over the lazy dogs';
 my $did = $config->{mySMSdid};
 my $dst = $config->{mySMSdst};
 printf "did='%s', dst='%s'\n", $did, $dst;
 my $ret = $voip->sendSMS(
 	did => $did,
 	dst => $dst,
-	message => 'testing 1 2 3½¹°',
+	message => 'The quick brown fox jumped over the lazy dogs',
 );
 $d = Data::Dumper->new([$ret]);
 print $d->Dump();
+exit(0);
 }
-if (1) {
-my $cdr = $voip->getSMS( { from => '2016-08-01', to => '2016-09-01'} );
+if ($ARGV[0] eq "smslist") {
+my $cdr = $voip->getSMS( { from => '2016-09-01', to => '2016-10-01' } );
 $d = Data::Dumper->new([$cdr]);
 print $d->Dump();
+exit(0);
 }
