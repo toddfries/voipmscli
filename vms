@@ -18,18 +18,25 @@ use strict;
 use warnings;
 
 use Data::Dumper;
-use OpenBSD::Getopt;
+#use OpenBSD::Getopt;
+use Getopt::Std;
 use VOIP::MS;
 
 # -n		quiet, just facts no labels
 
 our $opt_n = 0;
+our $opt_p;
+our $opt_c = $ENV{'HOME'}."/.voipms.conf";
 
-getopts('n');
+our $opt_f; # CDR/sendsms
+our $opt_t; # CDR/sendsms
+our $opt_m; # sendsms
+
+getopts('c:np:f:m:t:');
 
 my ($user,$pass);
 my $d;
-my $conffile=$ENV{'HOME'}."/.voipms.conf";
+my $conffile=$opt_c;
 my $config = { };
 if (-f $conffile) {
 	if (!open(CF,"$conffile")) {
@@ -45,6 +52,8 @@ if (-f $conffile) {
 			#printf "config: '%s' = '%s'\n",$var,$val;
 		}
 	}
+} else {
+	die("config file $conffile does not exist, need user and pass from it, bailing");
 }
 if (!defined($config->{user}) || !defined($config->{pass})) {
 	print "User or Pass is Null and void, bailing for now\n";
@@ -53,7 +62,7 @@ if (!defined($config->{user}) || !defined($config->{pass})) {
 my $voip = VOIP::MS->new(username => $config->{user},
 	password => $config->{pass});
 
-if ($ARGV[0] eq "balance") {
+if ($opt_p eq "balance") {
 	my $balinfo= $voip->getBalance();
 	my $fmt = "Balance = %0.8f\n";
 	if ($opt_n > 0) {
@@ -66,21 +75,30 @@ if ($ARGV[0] eq "balance") {
 # the following 'if (0)' bits work, they're just verbose; enable if desired
 # this is a wip anyway, will get re-done once enough apis are implemented
 
-if ($ARGV[0] eq "CDR") {
-my $cdr = $voip->getCDR( { date_from => '2016-08-01', date_to => '2016-10-01'} );
-$d = Data::Dumper->new([$cdr]);
-print $d->Dump();
-exit(0);
+if ($opt_p eq "CDR") {
+	if (!defined($opt_f)) {
+		$opt_f = "2016-08-01";
+	}
+	if (!defined($opt_t)) {
+		$opt_t = "2016-10-01";
+	}
+	my $cdr = $voip->getCDR( {
+		date_from => $opt_f,
+		date_to => $opt_t,
+	} );
+	$d = Data::Dumper->new([$cdr]);
+	print $d->Dump();
+	exit(0);
 }
 
-if ($ARGV[0] eq "servers") {
+if ($opt_p eq "servers") {
 my $slist = $voip->getServersInfo(); # optional: server_pop => 1
 $d = Data::Dumper->new([$slist]);
 print $d->Dump();
 exit(0);
 }
 
-if ($ARGV[0] eq "internationalinfo") {
+if ($opt_p eq "internationalinfo") {
   my $tret = $voip->getInternationalTypes();
   foreach my $it (@$tret) {
     printf "%12s %s\n", $it->{value}, $it->{description};
@@ -131,7 +149,7 @@ if ($ARGV[0] eq "internationalinfo") {
   }
   exit(0);
 }
-if ($ARGV[0] eq "callaccounts") {
+if ($opt_p eq "callaccounts") {
 my $ret = $voip->getCallAccounts(); # optional: client => 56115
 my $i=0;
 foreach my $acct (@$ret) {
@@ -148,17 +166,17 @@ foreach my $acct (@$ret) {
 }
 }
 	
-if ($ARGV[0] eq "billing") {
+if ($opt_p eq "billing") {
 my $ret = $voip->getCallBilling();
 $d = Data::Dumper->new([$ret]);
 print $d->Dump();
 }
-if ($ARGV[0] eq "calltypes") {
+if ($opt_p eq "calltypes") {
 my $ret = $voip->getCallTypes(); # optional: client => 56115
 $d = Data::Dumper->new([$ret]);
 print $d->Dump();
 }
-if ($ARGV[0] eq "regstatus") {
+if ($opt_p eq "regstatus") {
 my $ret = $voip->getRegistrationStatus(account => $config->{account0});
 $d = Data::Dumper->new([$ret]);
 print $d->Dump();
@@ -176,13 +194,13 @@ my $cdr = $voip->setCallback( $cb );
 $d = Data::Dumper->new([$cdr]);
 print $d->Dump();
 }
-if ($ARGV[0] eq "packages") { # how to create a package?
+if ($opt_p eq "packages") { # how to create a package?
 my $ret = $voip->getPackages(); # optional: package => 8378
 $d = Data::Dumper->new([$ret]);
 print $d->Dump();
 }
 
-if ($ARGV[0] eq "dids") {
+if ($opt_p eq "dids") {
 # optional: client => '' || '5615' || '5615_VoIP'
 # optional: did => 1231231234
 my $ret = $voip->getDIDsInfo();
@@ -191,26 +209,43 @@ print $d->Dump();
 exit(0);
 }
 
-if ($ARGV[0] eq "sendsms") {
+if ($opt_p eq "sendsms") {
+	if (!defined($opt_f)) {
+		$opt_f = $config->{mySMSdid};
+	}
+	if (!defined($opt_t)) {
+		$opt_t = $config->{mySMSdst};
+	}
+	if (!defined($opt_m)) {
+		die("cannot send a sms without a message! use -m <message>");
+	}
 my %p;
-$p{did} = $config->{mySMSdid};
-$p{dst} = $config->{mySMSdst};
+$p{did} = $opt_f;
+$p{dst} = $opt_t;
 #$p{message} = 'testing 1 2 3½¹°';
-$p{message} = 'The quick brown fox jumped over the lazy dogs';
-my $did = $config->{mySMSdid};
-my $dst = $config->{mySMSdst};
+#$p{message} = 'The quick brown fox jumped over the lazy dogs';
+#$p{message} = 'Receiving SMS on a MiFi for an old owner of the number 4057795424, please stop.';
+$p{message} = $opt_m;
+my $did = $opt_f;
+my $dst = $opt_t;
 printf "did='%s', dst='%s'\n", $did, $dst;
 my $ret = $voip->sendSMS(
 	did => $did,
 	dst => $dst,
-	message => 'The quick brown fox jumped over the lazy dogs',
+	message => $opt_m,
 );
 $d = Data::Dumper->new([$ret]);
 print $d->Dump();
 exit(0);
 }
-if ($ARGV[0] eq "smslist") {
-my $cdr = $voip->getSMS( { from => '2016-09-01', to => '2016-10-01' } );
+if ($opt_p eq "smslist") {
+	if (!defined($opt_f)) {
+		$opt_f = "2016-08-01";
+	}
+	if (!defined($opt_t)) {
+		$opt_t = "2016-10-01";
+	}
+my $cdr = $voip->getSMS( { from => $opt_f, to => $opt_t } );
 $d = Data::Dumper->new([$cdr]);
 print $d->Dump();
 exit(0);
