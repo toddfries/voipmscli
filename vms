@@ -29,10 +29,11 @@ our $opt_p;
 our $opt_c = $ENV{'HOME'}."/.voipms.conf";
 
 our $opt_f; # CDR/sendsms
+our $opt_s; # ratecentersusa
 our $opt_t; # CDR/sendsms
 our $opt_m; # sendsms
 
-getopts('c:np:f:m:t:');
+getopts('c:np:f:m:s:t:');
 
 my ($user,$pass);
 my $d;
@@ -111,6 +112,51 @@ if ($opt_p eq "transactionhistory") {
 		date_to => $opt_t,
 	} );
 	$d = Data::Dumper->new([$thist]);
+	print $d->Dump();
+	exit(0);
+}
+if ($opt_p eq "allowedcodecs") {
+	my $acodecs = $voip->getAllowedCodecs;
+	$d = Data::Dumper->new([$acodecs]);
+	print $d->Dump();
+	exit(0);
+}
+
+if ($opt_p eq "lockinternational") {
+	my $res = $voip->getLockInternational;
+	$d = Data::Dumper->new([$res]);
+	print $d->Dump();
+	exit(0);
+}
+
+if ($opt_p eq "protocols") {
+	my $res = $voip->getProtocols;
+	$d = Data::Dumper->new([$res]);
+	print $d->Dump();
+	exit(0);
+}
+if ($opt_p eq "routes") {
+	my $res = $voip->getRoutes;
+	$d = Data::Dumper->new([$res]);
+	print $d->Dump();
+	exit(0);
+}
+if ($opt_p eq "subaccounts") {
+	my $res = $voip->getSubAccounts;
+	$d = Data::Dumper->new([$res]);
+	print $d->Dump();
+	exit(0);
+}
+if ($opt_p eq "clients") {
+	my $res = $voip->getClients;
+	$d = Data::Dumper->new([$res]);
+	print $d->Dump();
+	exit(0);
+}
+if ($opt_p eq "ratecentersusa") {
+	my $state = $opt_s;
+	my $res = $voip->getRateCentersUSA({ state => $state });
+	$d = Data::Dumper->new([$res]);
 	print $d->Dump();
 	exit(0);
 }
