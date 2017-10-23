@@ -72,6 +72,14 @@ if ($opt_p eq "balance") {
 	exit(0);
 }
 
+if ($opt_p eq "getlang") {
+	my $langinfo = $voip->getLanguages();
+	$d = Data::Dumper->new([$langinfo]);
+	print $d->Dump();
+	exit(0);
+}
+	
+
 # the following 'if (0)' bits work, they're just verbose; enable if desired
 # this is a wip anyway, will get re-done once enough apis are implemented
 
@@ -92,10 +100,19 @@ if ($opt_p eq "CDR") {
 }
 
 if ($opt_p eq "servers") {
-my $slist = $voip->getServersInfo(); # optional: server_pop => 1
-$d = Data::Dumper->new([$slist]);
-print $d->Dump();
-exit(0);
+	my $slist = $voip->getServersInfo(); # optional: server_pop => 1
+	$d = Data::Dumper->new([$slist]);
+	print $d->Dump();
+	exit(0);
+}
+if ($opt_p eq "transactionhistory") {
+	my $thist = $voip->getTransactionHistory( {
+		date_from => $opt_f,
+		date_to => $opt_t,
+	} );
+	$d = Data::Dumper->new([$thist]);
+	print $d->Dump();
+	exit(0);
 }
 
 if ($opt_p eq "internationalinfo") {
